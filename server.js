@@ -19,11 +19,14 @@ const userRoutes = require("./routes/userRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const itemRoutes = require("./routes/itemRoutes");
 const cartRoutes = require("./routes/cartRoutes");
+const checkoutRoutes = require("./routes/checkoutRoutes");
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/checkout", checkoutRoutes);
 
 // sequelize db
 const db = require("./models");

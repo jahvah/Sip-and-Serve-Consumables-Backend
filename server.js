@@ -17,6 +17,7 @@ const customerRoutes = require("./routes/customerRoutes");
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customerRoutes);
 
+
 const PORT = 3000;
 
 app.listen(PORT, () => {

@@ -120,4 +120,64 @@ const loginUser = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser };
+/* =========================
+   UPDATE USER ROLE (ADMIN)
+========================= */
+const updateUser = async (req, res) => {
+
+    try {
+
+        const { user_id, role, status } = req.body;
+
+        const user = await User.findByPk(user_id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        await user.update({ role, status });
+
+        return res.json({ message: "User updated" });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+//delete user (admin)
+const deleteUser = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        await User.destroy({
+            where: { id }
+        });
+
+        return res.json({ message: "User deleted" });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+//fetch all users (admin )
+const getAllUsers = async (req, res) => {
+
+    try {
+
+        const users = await User.findAll();
+
+        return res.json({ users });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+module.exports = {
+    registerUser,
+    loginUser,
+    getAllUsers,
+    updateUser,
+    deleteUser
+};

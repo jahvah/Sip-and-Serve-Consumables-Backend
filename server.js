@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+
 // serve frontend
 app.use(express.static(path.join(__dirname, "../SipAndServeFrontend")));
 
@@ -27,6 +28,7 @@ app.use("/api/customer", customerRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
+app.use("/uploads", express.static("uploads"));
 
 // sequelize db
 const db = require("./models");

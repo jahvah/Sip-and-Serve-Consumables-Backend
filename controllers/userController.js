@@ -5,10 +5,7 @@ const db = require("../models");
 const User = db.User;
 const Customer = db.Customer;
 
-/* =========================
-   REGISTER USER
-   Creates a new user account and corresponding customer record inside a transaction
-========================= */
+/* REGISTER */
 const registerUser = async (req, res) => {
 
     const transaction = await db.sequelize.transaction();
@@ -24,10 +21,7 @@ const registerUser = async (req, res) => {
 
         if (existing) {
             await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Email already exists"
-            });
+            return res.status(400).json({ message: "Email already exists" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -42,31 +36,28 @@ const registerUser = async (req, res) => {
 
         await Customer.create({
             user_id: user.id,
-            lname: ""
+            fname: "",
+            lname: "",
+            phone: "",
+            addressline: "",
+            town: "",
+            image_path: null
         }, { transaction });
 
         await transaction.commit();
 
         return res.json({
             success: true,
-            message: "Registration Successful",
             user_id: user.id
         });
 
     } catch (err) {
-
         await transaction.rollback();
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
+        return res.status(500).json({ message: err.message });
     }
 };
 
-/* =========================
-   LOGIN USER
-   Authenticates user credentials and returns JWT token with user details
-========================= */
+/* LOGIN */
 const loginUser = async (req, res) => {
 
     try {
@@ -75,24 +66,14 @@ const loginUser = async (req, res) => {
 
         const user = await User.findOne({ where: { email } });
 
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid email or password"
-            });
-        }
+        if (!user) return res.status(401).json({ message: "Invalid login" });
 
         const match = await bcrypt.compare(password, user.password);
 
-        if (!match) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid email or password"
-            });
-        }
+        if (!match) return res.status(401).json({ message: "Invalid login" });
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
+            { id: user.id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: "24h" }
         );
@@ -100,72 +81,32 @@ const loginUser = async (req, res) => {
         await user.update({ token });
 
         return res.json({
-            success: true,
-            message: "Login successful",
             token,
             user: {
                 id: user.id,
-                name: user.name,
                 email: user.email,
                 role: user.role
             }
         });
 
     } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-};
-
-/* =========================
-   UPDATE USER ROLE (ADMIN)
-========================= */
-const updateUser = async (req, res) => {
-
-    try {
-
-        const { user_id, role, status } = req.body;
-
-        const user = await User.findByPk(user_id);
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        await user.update({ role, status });
-
-        return res.json({ message: "User updated" });
-
-    } catch (err) {
         return res.status(500).json({ message: err.message });
     }
 };
 
-//delete user (admin)
-const deleteUser = async (req, res) => {
-
-    try {
-
-        const { id } = req.params;
-
-        await User.destroy({
-            where: { id }
-        });
-
-        return res.json({ message: "User deleted" });
-
-    } catch (err) {
-        return res.status(500).json({ message: err.message });
-    }
-};
-//fetch all users (admin )
+/* GET ALL USERS (WITH CUSTOMER) */
 const getAllUsers = async (req, res) => {
 
     try {
 
-        const users = await User.findAll();
+        const users = await User.findAll({
+            include: [
+                {
+                    model: db.Customer,
+                    as: "customer"
+                }
+            ]
+        });
 
         return res.json({ users });
 
@@ -174,32 +115,77 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-//for header
-const getCustomerByUserId = async (req, res) => {
+/* UPDATE FULL USER */
+const updateFullUser = async (req, res) => {
+
+    const imagePath = req.file ? "/uploads/" + req.file.filename : undefined;
+    const transaction = await db.sequelize.transaction();
 
     try {
 
-        const { userId } = req.params;
+        const {
+            user_id,
+            email,
+            role,
+            status,
+            fname,
+            lname,
+            phone,
+            addressline,
+            town
+        } = req.body;
+
+        const user = await User.findByPk(user_id);
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        await user.update({ email, role, status }, { transaction });
 
         const customer = await Customer.findOne({
-            where: { user_id: userId }
+            where: { user_id }
         });
 
-        if (!customer) {
-            return res.status(404).json({ message: "Customer not found" });
-        }
+        await customer.update({
+    fname: fname ?? customer.fname,
+    lname: lname ?? customer.lname,
+    phone: phone ?? customer.phone,
+    addressline: addressline ?? customer.addressline,
+    town: town ?? customer.town,
 
-        return res.json(customer);
+    image_path: imagePath ?? customer.image_path
+
+        }, { transaction });
+
+        await transaction.commit();
+
+        return res.json({ message: "Updated successfully" });
+
+    } catch (err) {
+
+        await transaction.rollback();
+
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+/* DELETE USER */
+const deleteUser = async (req, res) => {
+
+    try {
+
+        await User.destroy({ where: { id: req.params.id } });
+
+        return res.json({ message: "Deleted" });
 
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
 };
+
 module.exports = {
     registerUser,
     loginUser,
     getAllUsers,
-    updateUser,
-    deleteUser,
-    getCustomerByUserId
+    updateFullUser,
+    deleteUser
 };

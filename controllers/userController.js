@@ -15,7 +15,7 @@ const registerUser = async (req, res) => {
 
     try {
 
-        const { name, email, password } = req.body;
+        const { email, password } = req.body;
 
         const existing = await User.findOne({
             where: { email },
@@ -33,7 +33,6 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            name,
             email,
             password: hashedPassword,
             role: "User",
@@ -174,10 +173,33 @@ const getAllUsers = async (req, res) => {
         return res.status(500).json({ message: err.message });
     }
 };
+
+//for header
+const getCustomerByUserId = async (req, res) => {
+
+    try {
+
+        const { userId } = req.params;
+
+        const customer = await Customer.findOne({
+            where: { user_id: userId }
+        });
+
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        return res.json(customer);
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
 module.exports = {
     registerUser,
     loginUser,
     getAllUsers,
     updateUser,
-    deleteUser
+    deleteUser,
+    getCustomerByUserId
 };

@@ -8,4 +8,5 @@ router.post("/login", userController.loginUser);
 router.get("/all", userController.getAllUsers);
 router.delete("/delete/:id", userController.deleteUser);
 router.put("/update-full",upload.single("image"),userController.updateFullUser);
+router.post("/create", upload.single("image"),userController.createCustomer);
 module.exports = router;

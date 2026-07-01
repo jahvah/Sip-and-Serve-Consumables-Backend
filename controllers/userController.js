@@ -168,6 +168,97 @@ const updateFullUser = async (req, res) => {
     }
 };
 
+/* CREATE CUSTOMER (ADMIN) */
+const createCustomer = async (req, res) => {
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+
+        const {
+            email,
+            password,
+            fname,
+            lname,
+            phone,
+            addressline,
+            town,
+            role,
+            status
+        } = req.body;
+
+        const imagePath = req.file
+            ? "/uploads/" + req.file.filename
+            : null;
+
+        const existing = await User.findOne({
+            where: { email },
+            transaction
+        });
+
+        if (existing) {
+            await transaction.rollback();
+            return res.status(400).json({
+                message: "Email already exists"
+            });
+        }
+
+        const gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+if (!gmailPattern.test(email)) {
+
+    await transaction.rollback();
+
+    return res.status(400).json({
+        message: "Please enter a valid Gmail address."
+    });
+
+}
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await User.create({
+
+            email,
+            password: hashedPassword,
+            role: role || "User",
+            status: status || "Active",
+            profile_image: "default.png"
+
+        }, { transaction });
+
+        await Customer.create({
+
+            user_id: user.id,
+            fname,
+            lname,
+            phone,
+            addressline,
+            town,
+            image_path: imagePath
+
+        }, { transaction });
+
+        await transaction.commit();
+
+        return res.json({
+
+            success: true,
+            message: "Customer created successfully"
+
+        });
+
+    } catch (err) {
+
+        await transaction.rollback();
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+
+};
+
 /* DELETE USER */
 const deleteUser = async (req, res) => {
 
@@ -187,5 +278,6 @@ module.exports = {
     loginUser,
     getAllUsers,
     updateFullUser,
-    deleteUser
+    deleteUser,
+    createCustomer
 };

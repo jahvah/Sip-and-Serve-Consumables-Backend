@@ -21,6 +21,8 @@ const customerRoutes = require("./routes/customerRoutes");
 const itemRoutes = require("./routes/itemRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const checkoutRoutes = require("./routes/checkoutRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+
 
 
 app.use("/api/users", userRoutes);
@@ -29,6 +31,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use("/api/category", categoryRoutes);
 
 // sequelize db
 const db = require("./models");

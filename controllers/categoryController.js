@@ -12,29 +12,82 @@ const getAllCategories = async (req, res) => {
     }
 };
 
-/* UPDATE */
-const updateCategory = async (req, res) => {
+/* CREATE */
+const createCategory = async (req, res) => {
+
     try {
 
-        const { category_id, description } = req.body;
+        const { category } = req.body;
 
-        const category = await Category.findByPk(category_id);
-
-        if (!category) {
-            return res.status(404).json({ message: "Category not found" });
+        if (!category || category.trim() === "") {
+            return res.status(400).json({
+                message: "category is required."
+            });
         }
 
-        await category.update({
-            description: description ?? category.description
+        await Category.create({
+            category: category.trim()
         });
 
-        return res.json({ message: "Updated successfully" });
+        return res.json({
+            message: "Category created successfully."
+        });
 
     } catch (err) {
-        return res.status(500).json({ message: err.message });
+
+        return res.status(500).json({
+            message: err.message
+        });
+
     }
+
 };
 
+/* UPDATE */
+/* UPDATE */
+const updateCategory = async (req, res) => {
+
+    try {
+
+        const { category_id, category } = req.body;
+
+        const existingCategory = await Category.findByPk(category_id);
+
+        if (!existingCategory) {
+            return res.status(404).json({
+                message: "Category not found."
+            });
+        }
+
+        if (!category || category.trim() === "") {
+            return res.status(400).json({
+                message: "Category is required."
+            });
+        }
+
+        if (existingCategory.category === category.trim()) {
+            return res.status(400).json({
+                message: "No changes were made."
+            });
+        }
+
+        await existingCategory.update({
+            category: category.trim()
+        });
+
+        return res.json({
+            message: "Category updated successfully."
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+
+};
 /* DELETE */
 const deleteCategory = async (req, res) => {
     try {
@@ -51,6 +104,7 @@ const deleteCategory = async (req, res) => {
 };
 
 module.exports = {
+    createCategory,
     getAllCategories,
     updateCategory,
     deleteCategory

@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             autoIncrement: true
         },
 
-        description: {
+        category: {
             type: DataTypes.STRING(255),
             allowNull: false
         },

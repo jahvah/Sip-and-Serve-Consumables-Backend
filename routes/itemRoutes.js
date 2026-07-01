@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const itemController = require("../controllers/itemController");
 
-// GET all items (for homepage)
-router.get("/", itemController.getAllProducts);
+const controller = require("../controllers/itemController");
 
+router.get("/all", controller.getAllItems);
+router.put("/update", controller.updateItem);
+router.delete("/delete/:id", controller.deleteItem);
 
 module.exports = router;

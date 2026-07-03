@@ -1,41 +1,56 @@
 module.exports = (sequelize, DataTypes) => {
+  const OrderInfo = sequelize.define("OrderInfo", {
+    orderinfo_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
 
-    const OrderInfo = sequelize.define("OrderInfo", {
+    customer_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
 
-        orderinfo_id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
-        },
+    date_placed: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
 
-        customer_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
+    date_shipped: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
 
-        date_placed: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW
-        },
+    date_delivered: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
 
-        status: {
-            type: DataTypes.ENUM("Pending", "Paid", "Cancelled"),
-            defaultValue: "Pending"
-        }
+    status: {
+      type: DataTypes.ENUM("Pending", "Shipped", "Delivered", "Cancelled"),
+      allowNull: false
+    },
 
-    }, {
-        tableName: "orderinfo",
-        timestamps: false
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
+  }, {
+    tableName: "orderinfo",
+    timestamps: false
+  });
+
+  OrderInfo.associate = (models) => {
+    OrderInfo.belongsTo(models.Customer, {
+      foreignKey: "customer_id",
+      as: "customer"
     });
 
-    OrderInfo.associate = (models) => {
+    OrderInfo.hasMany(models.OrderLine, {
+      foreignKey: "orderinfo_id",
+      as: "orderlines"
+    });
+  };
 
-        OrderInfo.hasMany(models.OrderLine, {
-            foreignKey: "orderinfo_id",
-            as: "lines"
-        });
-
-    };
-
-    return OrderInfo;
+  return OrderInfo;
 };

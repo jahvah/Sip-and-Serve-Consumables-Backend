@@ -10,8 +10,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
 // serve frontend
 app.use(express.static(path.join(__dirname, "../SipAndServeFrontend")));
 
@@ -22,17 +20,17 @@ const itemRoutes = require("./routes/itemRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const checkoutRoutes = require("./routes/checkoutRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
-
-
-
+const orderRoutes = require("./routes/orderRoutes");
 
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
-app.use("/uploads", express.static("uploads"));
 app.use("/api/category", categoryRoutes);
+app.use("/api/orders", orderRoutes);
+
+app.use("/uploads", express.static("uploads"));
 
 // sequelize db
 const db = require("./models");

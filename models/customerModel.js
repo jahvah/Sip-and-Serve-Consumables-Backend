@@ -1,68 +1,66 @@
 module.exports = (sequelize, DataTypes) => {
+  const Customer = sequelize.define("Customer", {
+    customer_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
 
-    const Customer = sequelize.define("Customer", {
+    title: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
-        customer_id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
-        },
+    fname: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
-        title: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+    lname: {
+      type: DataTypes.STRING,
+      defaultValue: ""
+    },
 
-        fname: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+    addressline: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
 
-        lname: {
-            type: DataTypes.STRING,
-            defaultValue: ""
-        },
+    town: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
-        addressline: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
-        town: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+    user_id: {
+      type: DataTypes.BIGINT.UNSIGNED,
+      allowNull: false
+    },
 
-        phone: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+    image_path: {
+      type: DataTypes.STRING,
+      allowNull: true
+    }
+  }, {
+    tableName: "customer",
+    timestamps: false
+  });
 
-        user_id: {
-            type: DataTypes.BIGINT.UNSIGNED,
-            allowNull: false
-        },
-
-        image_path: {
-            type: DataTypes.STRING,
-            allowNull: true
-        }
-
-    }, {
-
-        tableName: "customer",
-        timestamps: false
-
+  Customer.associate = (models) => {
+    Customer.belongsTo(models.User, {
+      foreignKey: "user_id",
+      as: "user"
     });
 
-    Customer.associate = (models) => {
+    Customer.hasMany(models.OrderInfo, {
+      foreignKey: "customer_id",
+      as: "orders"
+    });
+  };
 
-        Customer.belongsTo(models.User, {
-            foreignKey: "user_id",
-            as: "user"
-        });
-
-    };
-
-    return Customer;
+  return Customer;
 };

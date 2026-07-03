@@ -1,40 +1,42 @@
 module.exports = (sequelize, DataTypes) => {
+  const OrderLine = sequelize.define("OrderLine", {
+    orderinfo_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      allowNull: false
+    },
 
-    const OrderLine = sequelize.define("OrderLine", {
+    item_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      allowNull: false
+    },
 
-        orderinfo_id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true
-        },
+    quantity: {
+      type: DataTypes.TINYINT,
+      allowNull: true
+    },
 
-        item_id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true
-        },
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
+  }, {
+    tableName: "orderline",
+    timestamps: false
+  });
 
-        quantity: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        }
-
-    }, {
-        tableName: "orderline",
-        timestamps: false
+  OrderLine.associate = (models) => {
+    OrderLine.belongsTo(models.OrderInfo, {
+      foreignKey: "orderinfo_id",
+      as: "order"
     });
 
-    OrderLine.associate = (models) => {
+    OrderLine.belongsTo(models.Item, {
+      foreignKey: "item_id",
+      as: "item"
+    });
+  };
 
-        OrderLine.belongsTo(models.Item, {
-            foreignKey: "item_id",
-            as: "item"
-        });
-
-        OrderLine.belongsTo(models.OrderInfo, {
-            foreignKey: "orderinfo_id",
-            as: "order"
-        });
-
-    };
-
-    return OrderLine;
+  return OrderLine;
 };

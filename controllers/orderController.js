@@ -133,6 +133,7 @@ const getSingleOrder = async (req, res) => {
 /* =========================
    CREATE ORDER
 ========================= */
+
 const createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
 
@@ -140,9 +141,6 @@ const createOrder = async (req, res) => {
     const {
       customer_id,
       date_placed,
-      date_shipped,
-      date_delivered,
-      status,
       orderlines
     } = req.body;
 
@@ -160,28 +158,57 @@ const createOrder = async (req, res) => {
       });
     }
 
- const order = await OrderInfo.create({
-    customer_id,
-    date_placed,
-    date_shipped: null,
-    date_delivered: null,
-    status: status || "Pending"
-}, { transaction });
-
+    /* =========================
+       🔥 STOCK VALIDATION (OPTION A FIX)
+    ========================= */
     for (const line of orderlines) {
-      if (!line.item_id) {
-        continue;
+
+      if (!line.item_id) continue;
+
+      const stock = await Stock.findOne({
+        where: { item_id: line.item_id },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+
+      if (!stock) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stock record not found for item ID ${line.item_id}`
+        });
       }
+
+      if ((line.quantity || 0) > (stock.quantity || 0)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Quantity exceeded stock for item ID ${line.item_id}`
+        });
+      }
+    }
+
+    /* =========================
+       CREATE ORDER HEADER
+    ========================= */
+    const order = await OrderInfo.create({
+      customer_id,
+      date_placed,
+      date_shipped: null,
+      date_delivered: null,
+      status: "Pending"
+    }, { transaction });
+
+    /* =========================
+       CREATE ORDER LINES
+    ========================= */
+    for (const line of orderlines) {
+
+      if (!line.item_id) continue;
 
       await OrderLine.create({
         orderinfo_id: order.orderinfo_id,
         item_id: line.item_id,
         quantity: line.quantity || 1
       }, { transaction });
-    }
-
-    if ((status || "Pending") === "Shipped") {
-      await reduceStock(order.orderinfo_id, transaction);
     }
 
     await transaction.commit();
@@ -432,15 +459,22 @@ const searchItems = async (req, res) => {
         const search = req.query.term || "";
 
         const items = await Item.findAll({
-            where: {
-                item_name: {
-                    [Op.like]: `%${search}%`
-                }
-            },
-            attributes: ["item_id", "item_name", "sell_price"],
-            limit: 20,
-            order: [["item_name", "ASC"]]
-        });
+    where: {
+        item_name: {
+            [Op.like]: `%${search}%`
+        }
+    },
+    attributes: ["item_id", "item_name", "sell_price"],
+    include: [
+        {
+            model: Stock,
+            as: "stock",
+            attributes: ["quantity"]
+        }
+    ],
+    limit: 20,
+    order: [["item_name", "ASC"]]
+});
 
         return res.json({ items });
 

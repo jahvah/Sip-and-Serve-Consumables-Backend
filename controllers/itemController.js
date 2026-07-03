@@ -16,6 +16,11 @@ const getAllItems = async (req, res) => {
                 {
                     model: db.ItemImages,
                     as: "images"
+                },
+
+                {
+                    model: db.Stock,
+                    as: "stock"
                 }
             ]
         });

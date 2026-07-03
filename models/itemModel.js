@@ -11,6 +11,7 @@ const Item = sequelize.define("Item", {
     cost_price: DataTypes.DECIMAL(7,2),
     sell_price: DataTypes.DECIMAL(7,2),
     category_id: DataTypes.BIGINT,
+    image: DataTypes.STRING
 }, {
     tableName: "item",
     timestamps: true,
@@ -32,4 +33,5 @@ Item.associate = (models) => {
 };
 
 return Item;
+
 };

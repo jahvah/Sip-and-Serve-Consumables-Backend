@@ -1,12 +1,55 @@
 const express = require("express");
 const router = express.Router();
+
 const userController = require("../controllers/userController");
 const upload = require("../middlewares/upload");
 
+const auth = require("../middlewares/auth");
+const admin = require("../middlewares/admin");
+
+/* =========================
+   PUBLIC ROUTES
+========================= */
+
 router.post("/register", userController.registerUser);
+
 router.post("/login", userController.loginUser);
-router.get("/all", userController.getAllUsers);
-router.delete("/delete/:id", userController.deleteUser);
-router.put("/update-full",upload.single("image"),userController.updateFullUser);
-router.post("/create", upload.single("image"),userController.createCustomer);
+
+/* =========================
+   ADMIN ONLY ROUTES
+========================= */
+
+router.get(
+    "/all",
+    auth,
+    admin,
+    userController.getAllUsers
+);
+
+router.delete(
+    "/delete/:id",
+    auth,
+    admin,
+    userController.deleteUser
+);
+
+router.post(
+    "/create",
+    auth,
+    admin,
+    upload.single("image"),
+    userController.createCustomer
+);
+
+/* =========================
+   AUTHENTICATED USER ROUTES
+========================= */
+
+router.put(
+    "/update-full",
+    auth,
+    upload.single("image"),
+    userController.updateFullUser
+);
+
 module.exports = router;

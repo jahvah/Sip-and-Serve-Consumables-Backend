@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // serve frontend
 app.use(express.static(path.join(__dirname, "../SipAndServeFrontend")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // routes
 const userRoutes = require("./routes/userRoutes");
@@ -21,6 +22,7 @@ const cartRoutes = require("./routes/cartRoutes");
 const checkoutRoutes = require("./routes/checkoutRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customerRoutes);

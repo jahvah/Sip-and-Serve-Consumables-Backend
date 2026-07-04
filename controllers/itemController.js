@@ -32,7 +32,6 @@ const getAllItems = async (req, res) => {
     }
 };
 
-
 /* =========================
    CREATE ITEM
 ========================= */
@@ -45,7 +44,8 @@ const createItem = async (req, res) => {
             description,
             cost_price,
             sell_price,
-            category_id
+            category_id,
+            quantity
         } = req.body;
 
         if (
@@ -76,6 +76,14 @@ const createItem = async (req, res) => {
             image: mainImage
         });
 
+        // =========================
+        // STOCK CREATE (NEW)
+        // =========================
+        await db.Stock.create({
+            item_id: item.item_id,
+            quantity: quantity && quantity !== "" ? quantity : 0
+        });
+
         // GALLERY IMAGES
         if (req.files && req.files.images) {
 
@@ -101,21 +109,20 @@ const createItem = async (req, res) => {
 
 
 /* =========================
-   UPDATE ITEM (BASIC INFO ONLY)
-   (MAIN IMAGE + GALLERY = NEXT PART)
+   UPDATE ITEM (BASIC INFO + STOCK)
 ========================= */
 const updateItem = async (req, res) => {
 
     try {
 
-        
         const {
             item_id,
             item_name,
             description,
             cost_price,
             sell_price,
-            category_id
+            category_id,
+            quantity
         } = req.body;
 
         const item = await Item.findByPk(item_id);
@@ -151,19 +158,27 @@ const updateItem = async (req, res) => {
                 ? category_id
                 : item.category_id;
 
-        // NO CHANGE CHECK
+        // NO CHANGE CHECK (excluding stock for safety)
+        const stock = await db.Stock.findOne({
+            where: { item_id }
+        });
+
+        const currentQty = stock ? stock.quantity : 0;
+
         if (
             newItemName === item.item_name &&
             newDescription === item.description &&
             Number(newCostPrice) === Number(item.cost_price) &&
             Number(newSellPrice) === Number(item.sell_price) &&
-            Number(newCategoryId) === Number(item.category_id)
+            Number(newCategoryId) === Number(item.category_id) &&
+            Number(quantity || currentQty) === Number(currentQty)
         ) {
             return res.status(400).json({
                 message: "No changes were made."
             });
         }
 
+        // UPDATE ITEM
         await item.update({
             item_name: newItemName,
             description: newDescription,
@@ -171,6 +186,22 @@ const updateItem = async (req, res) => {
             sell_price: newSellPrice,
             category_id: newCategoryId
         });
+
+        // =========================
+        // STOCK UPDATE (NEW)
+        // =========================
+        if (stock) {
+            await stock.update({
+                quantity: quantity !== undefined && quantity !== ""
+                    ? quantity
+                    : stock.quantity
+            });
+        } else {
+            await db.Stock.create({
+                item_id: item_id,
+                quantity: quantity || 0
+            });
+        }
 
         return res.json({
             message: "Item updated successfully."

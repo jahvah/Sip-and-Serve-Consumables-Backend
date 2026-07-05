@@ -39,7 +39,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "item_id",
       as: "stock"
     });
+    
+    Item.hasMany(models.Review, {
+    foreignKey: "item_id",
+    as: "reviews"
+});
   };
+
 
   return Item;
 };

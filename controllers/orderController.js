@@ -483,12 +483,178 @@ const searchItems = async (req, res) => {
     }
 };
 
+/* =========================
+   GET CUSTOMER ORDERS
+========================= */
+const getCustomerOrders = async (req, res) => {
+
+    try {
+
+        const customer = await Customer.findOne({
+            where: {
+                user_id: req.params.user_id
+            }
+        });
+
+        if (!customer) {
+            return res.status(404).json({
+                message: "Customer not found"
+            });
+        }
+
+        const orders = await OrderInfo.findAll({
+
+            where: {
+                customer_id: customer.customer_id,
+                deleted_at: null
+            },
+
+            include: [
+                {
+                    model: OrderLine,
+                    as: "orderlines",
+                    where: {
+                        deleted_at: null
+                    },
+                    required: false,
+                    include: [
+                        {
+                            model: Item,
+                            as: "item",
+                            attributes: [
+                                "item_id",
+                                "item_name",
+                                "sell_price"
+                            ]
+                        }
+                    ]
+                }
+            ],
+
+            order: [
+                ["orderinfo_id", "DESC"]
+            ]
+
+        });
+
+        return res.json({
+            orders
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+
+};
+
+
+/* =========================
+   CUSTOMER CANCEL ORDER
+========================= */
+const cancelCustomerOrder = async (req, res) => {
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+
+        const customer = await Customer.findOne({
+            where: {
+                user_id: req.params.user_id
+            },
+            transaction
+        });
+
+        if (!customer) {
+            await transaction.rollback();
+            return res.status(404).json({
+                message: "Customer not found"
+            });
+        }
+
+        const order = await OrderInfo.findOne({
+            where: {
+                orderinfo_id: req.params.order_id,
+                customer_id: customer.customer_id,
+                deleted_at: null
+            },
+            include: [
+                {
+                    model: OrderLine,
+                    as: "orderlines",
+                    where: { deleted_at: null },
+                    required: false
+                }
+            ],
+            transaction
+        });
+
+        if (!order) {
+            await transaction.rollback();
+            return res.status(404).json({
+                message: "Order not found"
+            });
+        }
+
+        if (order.status !== "Pending") {
+            await transaction.rollback();
+            return res.status(400).json({
+                message: "Only pending orders can be cancelled."
+            });
+        }
+
+        // =========================
+        // 🔁 RESTORE STOCK
+        // =========================
+        for (const line of order.orderlines) {
+
+            const stock = await Stock.findOne({
+                where: { item_id: line.item_id },
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+
+            if (stock) {
+                stock.quantity += line.quantity;
+                await stock.save({ transaction });
+            }
+        }
+
+        // =========================
+        // CANCEL ORDER
+        // =========================
+        await order.update({
+            status: "Cancelled"
+        }, { transaction });
+
+        await transaction.commit();
+
+        return res.json({
+            message: "Order cancelled and stock restored successfully."
+        });
+
+    } catch (err) {
+
+        await transaction.rollback();
+
+        return res.status(500).json({
+            message: err.message
+        });
+    }
+};
+
+
 module.exports = {
-  getOrders,
-  getSingleOrder,
-  createOrder,
-  updateOrder,
-  deleteOrder,
-  searchCustomers,
-  searchItems
+    getOrders,
+    getSingleOrder,
+    createOrder,
+    updateOrder,
+    deleteOrder,
+    searchCustomers,
+    searchItems,
+    getCustomerOrders,
+    cancelCustomerOrder
 };

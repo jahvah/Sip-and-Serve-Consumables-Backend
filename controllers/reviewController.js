@@ -54,17 +54,23 @@ const getPendingReviews = async (req, res) => {
                 status: "Delivered"
             },
             include: [
-                {
-                    model: OrderLine,
-                    as: "orderlines",
-                    include: [
-                        {
-                            model: Item,
-                            as: "item"
-                        }
-                    ]
-                }
-            ],
+    {
+        model: OrderLine,
+        as: "orderlines",
+        include: [
+            {
+                model: Item,
+                as: "item",
+                include: [
+                    {
+                        model: db.ItemImages,
+                        as: "images"
+                    }
+                ]
+            }
+        ]
+    }
+],
             order: [["orderinfo_id", "DESC"]]
         });
 
@@ -81,6 +87,7 @@ const getPendingReviews = async (req, res) => {
         orders.forEach(order => {
             order.orderlines.forEach(line => {
 
+                
                 const key = `${order.orderinfo_id}-${line.item_id}`;
 
                 if (!reviewedSet.has(key)) {
@@ -88,7 +95,10 @@ const getPendingReviews = async (req, res) => {
                         orderinfo_id: order.orderinfo_id,
                         item_id: line.item_id,
                         item_name: line.item?.item_name || "",
-                        image: line.item?.image || "no-image.png",
+                        image:
+                        line.item?.images?.length > 0
+                        ? line.item.images[0].image_path
+                        : (line.item?.image || "no-image.png"),                        
                         quantity: line.quantity,
                         date_delivered: order.date_delivered
                     });

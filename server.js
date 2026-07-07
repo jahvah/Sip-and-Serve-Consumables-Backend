@@ -11,7 +11,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // serve frontend
-app.use(express.static(path.join(__dirname, "../SipAndServeFrontend")));
+app.use(
+  express.static(path.join(__dirname, "../Sip-and-Serve-Consumables-Frontend")),
+);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // routes
@@ -33,7 +35,6 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-
 app.use("/uploads", express.static("uploads"));
 
 // sequelize db
@@ -43,7 +44,8 @@ const db = require("./models");
 const PORT = 3000;
 
 // connect DB + sync models + start server
-db.sequelize.authenticate()
+db.sequelize
+  .authenticate()
   .then(() => {
     console.log("Database connected");
 

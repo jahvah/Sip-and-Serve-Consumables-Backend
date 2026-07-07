@@ -29,6 +29,12 @@ Review.associate = (models) => {
         foreignKey: "review_id",
         as: "review_images"
     });
+
+    Review.belongsTo(models.Customer, {
+        foreignKey: "customer_id",
+        as: "customer"
+    });
+    
 };
 
     return Review;

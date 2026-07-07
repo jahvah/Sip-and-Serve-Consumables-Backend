@@ -8,6 +8,94 @@ const OrderLine = db.OrderLine;
 const Item = db.Item;
 const sequelize = db.sequelize;
 
+
+/* =========================
+   ADMIN GET ALL REVIEWS
+========================= */
+const getAllReviews = async (req, res) => {
+
+    try {
+
+        const reviews = await Review.findAll({
+
+            include:[
+                {
+                    model: Customer,
+                    as:"customer",
+                    attributes:[
+                        "fname",
+                        "lname"
+                    ]
+                },
+
+                {
+                    model: Item,
+                    as:"item",
+                    attributes:[
+                        "item_name",
+                        "image"
+                    ]
+                },
+
+                {
+                    model: ReviewImage,
+                    as:"review_images",
+                    attributes:[
+                        "image_path"
+                    ]
+                }
+            ],
+
+            order:[
+                ["review_id","DESC"]
+            ]
+
+        });
+
+
+        const data = reviews.map(review => ({
+
+            review_id: review.review_id,
+
+            customer_name:
+                `${review.customer?.fname || ""} ${review.customer?.lname || ""}`,
+
+            item_name:
+                review.item?.item_name || "",
+
+            item_image:
+                review.item?.image || "no-image.png",
+
+            rating:
+                review.rating,
+
+            review_text:
+                review.review_text,
+
+            review_images:
+                review.review_images || [],
+
+            created_at:
+                review.createdAt
+
+        }));
+
+
+        return res.json({
+            reviews:data
+        });
+
+
+    } catch(err){
+
+        return res.status(500).json({
+            message:err.message
+        });
+
+    }
+
+};
+
 /* =========================
    GET CUSTOMER BY USER ID
 ========================= */
@@ -260,10 +348,20 @@ const updateReview = async (req, res) => {
 const getReview = async (req, res) => {
     try {
         const review = await Review.findByPk(req.params.id, {
-            include: [
-                { model: Item, as: "item" },
-                { model: ReviewImage, as: "review_images" }
-            ]
+            include:[
+    {
+        model:Item,
+        as:"item"
+    },
+    {
+        model:ReviewImage,
+        as:"review_images"
+    },
+    {
+        model:Customer,
+        as:"customer"
+    }
+]
         });
 
         if (!review) {
@@ -287,5 +385,7 @@ module.exports = {
     getReviewHistory,
     createReview,
     updateReview,
-    getReview
+    getReview,
+    getAllReviews
+
 };

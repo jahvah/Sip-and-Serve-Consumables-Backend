@@ -62,10 +62,6 @@ exports.checkout = async (req, res) => {
                 });
             }
 
-            // deduct stock
-            stock.quantity -= c.quantity;
-            await stock.save();
-
             // create order line
             await OrderLine.create({
                 orderinfo_id: order.orderinfo_id,

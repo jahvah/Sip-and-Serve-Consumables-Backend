@@ -37,7 +37,8 @@ const getProfile = async (req, res) => {
             fname: customer.fname,
             lname: customer.lname,
             addressline: customer.addressline,
-            town: customer.town
+            town: customer.town,
+            phone: customer.phone
         });
 
     } catch (err) {
@@ -79,6 +80,7 @@ const updateCustomer = async (req, res) => {
             lname: customer.lname,
             addressline: customer.addressline,
             town: customer.town,
+            phone: customer.phone,
             profile_image: user.profile_image
         };
 
@@ -98,6 +100,7 @@ const updateCustomer = async (req, res) => {
             lname: req.body.lname || oldData.lname,
             addressline: req.body.addressline || oldData.addressline,
             town: req.body.town || oldData.town,
+            phone: req.body.phone || oldData.phone,
             profile_image: newImage
         };
 
@@ -110,6 +113,7 @@ const updateCustomer = async (req, res) => {
             oldData.lname === newData.lname &&
             oldData.addressline === newData.addressline &&
             oldData.town === newData.town &&
+            oldData.phone === newData.phone &&
             oldData.profile_image === newData.profile_image;
 
         if (isSame) {
@@ -126,6 +130,7 @@ const updateCustomer = async (req, res) => {
             fname: newData.fname,
             lname: newData.lname,
             addressline: newData.addressline,
+            phone: newData.phone,
             town: newData.town
         });
 
@@ -133,6 +138,7 @@ const updateCustomer = async (req, res) => {
         // UPDATE USER TABLE (ONLY IMAGE)
         // =========================
         await user.update({
+            
             profile_image: newData.profile_image
         });
 

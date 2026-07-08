@@ -82,6 +82,7 @@ const getItemById = async (req, res) => {
         cost_price: item.cost_price,
         sell_price: item.sell_price,
         category_id: item.category_id,
+        category: item.category || null,
         image: item.image,
         images: item.images || [],
         stock: item.stock || null,
@@ -383,6 +384,51 @@ const deleteItem = async (req, res) => {
   }
 };
 
+/* =========================
+   SEARCH ITEMS
+========================= */
+
+const { Op } = require("sequelize");
+
+const searchItems = async (req, res) => {
+
+    try{
+
+        const keyword = req.query.keyword || "";
+
+        const items = await Item.findAll({
+
+            where:{
+                item_name:{
+                    [Op.like]: `%${keyword}%`
+                }
+            },
+
+            attributes:[
+                "item_id",
+                "item_name"
+            ],
+
+            limit:10
+
+        });
+
+        res.json({
+            items
+        });
+
+    }
+
+    catch(err){
+
+        res.status(500).json({
+            message:err.message
+        });
+
+    }
+
+};
+
 module.exports = {
   getAllItems,
   getItemById,
@@ -393,4 +439,5 @@ module.exports = {
   addImages,
   deleteImage,
   deleteItem,
+  searchItems
 };

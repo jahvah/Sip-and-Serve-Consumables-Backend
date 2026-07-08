@@ -16,15 +16,18 @@ router.use(auth);
 ===================================================== */
 
 // View own orders
-router.get(
-    "/customer/:user_id",
-    orderController.getCustomerOrders
-);
+router.get("/customer/:user_id", orderController.getCustomerOrders);
 
 // Cancel own pending order
 router.put(
-    "/customer/:user_id/cancel/:order_id",
-    orderController.cancelCustomerOrder
+  "/customer/:user_id/cancel/:order_id",
+  orderController.cancelCustomerOrder,
+);
+
+// Download own order's receipt (ownership-checked)
+router.get(
+  "/customer/:user_id/receipt/:order_id",
+  orderController.downloadReceiptForCustomer,
 );
 
 /* =====================================================
@@ -33,45 +36,27 @@ router.put(
 router.use(admin);
 
 // Get all orders
-router.get(
-    "/",
-    orderController.getOrders
-);
+router.get("/", orderController.getOrders);
 
 // Search customers
-router.get(
-    "/customers/search",
-    orderController.searchCustomers
-);
+router.get("/customers/search", orderController.searchCustomers);
 
 // Search items
-router.get(
-    "/items/search",
-    orderController.searchItems
-);
+router.get("/items/search", orderController.searchItems);
 
 // Get single order
-router.get(
-    "/:id",
-    orderController.getSingleOrder
-);
+router.get("/:id", orderController.getSingleOrder);
+
+// Download any order's receipt (admin)
+router.get("/:id/receipt", orderController.downloadReceipt);
 
 // Create order
-router.post(
-    "/",
-    orderController.createOrder
-);
+router.post("/", orderController.createOrder);
 
 // Update order
-router.put(
-    "/:id",
-    orderController.updateOrder
-);
+router.put("/:id", orderController.updateOrder);
 
 // Delete order
-router.delete(
-    "/:id",
-    orderController.deleteOrder
-);
+router.delete("/:id", orderController.deleteOrder);
 
 module.exports = router;

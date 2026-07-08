@@ -11,6 +11,7 @@ const admin = require("../middlewares/admin");
    PUBLIC - GET ITEMS (HOME PAGE)
 ========================= */
 router.get("/all", controller.getAllItems);
+router.get("/search", controller.searchItems);
 router.get("/:id", controller.getItemById);
 
 /* =========================

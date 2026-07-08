@@ -25,6 +25,7 @@ const checkoutRoutes = require("./routes/checkoutRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customerRoutes);
@@ -34,6 +35,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/uploads", express.static("uploads"));
 

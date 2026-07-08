@@ -1,31 +1,45 @@
-module.exports = (sequelize, DataTypes) => {
+    module.exports = (sequelize, DataTypes) => {
 
-    const Category = sequelize.define("Category", {
+        const Category = sequelize.define("Category", {
 
-        category_id: {
-            type: DataTypes.BIGINT.UNSIGNED,
-            primaryKey: true,
-            autoIncrement: true
-        },
+            category_id: {
+                type: DataTypes.BIGINT.UNSIGNED,
+                primaryKey: true,
+                autoIncrement: true
+            },
 
-        category: {
-            type: DataTypes.STRING(255),
-            allowNull: false
-        },
+            category: {
+                type: DataTypes.STRING(255),
+                allowNull: false
+            },
 
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        }
+            deleted_at: {
+                type: DataTypes.DATE,
+                allowNull: true
+            }
 
-    }, {
-        tableName: "category",
-        timestamps: true,
-        createdAt: "created_at",
-        updatedAt: "updated_at",
-        paranoid: true,
-        deletedAt: "deleted_at"
-    });
+        }, {
+            tableName: "category",
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+            paranoid: true,
+            deletedAt: "deleted_at"
+        });
 
-    return Category;
-};
+
+        Category.associate = (models) => {
+
+            Category.hasMany(models.Item, {
+
+                foreignKey: "category_id",
+
+                as: "Items"
+
+            });
+
+        };
+
+        
+        return Category;
+    };

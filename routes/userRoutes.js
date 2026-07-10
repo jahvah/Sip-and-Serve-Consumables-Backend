@@ -20,6 +20,13 @@ router.post("/login", userController.loginUser);
 ========================= */
 
 router.get(
+    "/",
+    auth,
+    admin,
+    userController.getUsers
+);
+
+router.get(
     "/all",
     auth,
     admin,

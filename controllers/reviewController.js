@@ -12,57 +12,104 @@ const sequelize = db.sequelize;
    ADMIN GET ALL REVIEWS
 ========================= */
 const getAllReviews = async (req, res) => {
-  try {
-    const reviews = await Review.findAll({
-      include: [
-        {
-          model: Customer,
-          as: "customer",
-          attributes: ["fname", "lname"],
-        },
 
-        {
-          model: Item,
-          as: "item",
-          attributes: ["item_name", "image"],
-        },
+    try {
 
-        {
-          model: ReviewImage,
-          as: "review_images",
-          attributes: ["image_path"],
-        },
-      ],
+        const limit = Number(req.query.limit) || 10;
+        const offset = Number(req.query.offset) || 0;
 
-      order: [["review_id", "DESC"]],
-    });
 
-    const data = reviews.map((review) => ({
-      review_id: review.review_id,
+        const reviews = await Review.findAll({
 
-      customer_name: `${review.customer?.fname || ""} ${review.customer?.lname || ""}`,
+            include: [
 
-      item_name: review.item?.item_name || "",
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes:[
+                        "fname",
+                        "lname"
+                    ]
+                },
 
-      item_image: review.item?.image || "no-image.png",
+                {
+                    model: Item,
+                    as:"item",
+                    attributes:[
+                        "item_name",
+                        "image"
+                    ]
+                },
 
-      rating: review.rating,
+                {
+                    model: ReviewImage,
+                    as:"review_images",
+                    attributes:[
+                        "image_path"
+                    ]
+                }
 
-      review_text: review.review_text,
+            ],
 
-      review_images: review.review_images || [],
+            limit,
+            offset,
 
-      created_at: review.createdAt,
-    }));
+            order:[
+                ["review_id","DESC"]
+            ]
 
-    return res.json({
-      reviews: data,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: err.message,
-    });
-  }
+        });
+
+
+        const total = await Review.count();
+
+
+        const data = reviews.map(review => ({
+
+            review_id: review.review_id,
+
+            customer_name:
+            `${review.customer?.fname || ""} ${review.customer?.lname || ""}`,
+
+            item_name:
+            review.item?.item_name || "",
+
+            item_image:
+            review.item?.image || null,
+
+            rating:
+            review.rating,
+
+            review_text:
+            review.review_text,
+
+            review_images:
+            review.review_images || [],
+
+            created_at:
+            review.createdAt
+
+        }));
+
+
+        return res.json({
+
+            reviews:data,
+
+            total
+
+        });
+
+
+    }
+    catch(err){
+
+        return res.status(500).json({
+            message:err.message
+        });
+
+    }
+
 };
 
 /* =========================

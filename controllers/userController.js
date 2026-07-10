@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const db = require("../models");
+const { Op } = require("sequelize");
 
 const User = db.User;
 const Customer = db.Customer;
@@ -113,6 +114,146 @@ const getAllUsers = async (req, res) => {
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
+};
+
+/* GET USERS (PAGINATION / SEARCH) */
+const getUsers = async (req, res) => {
+
+    try {
+
+        const draw = Number(req.query.draw) || 1;
+        const start = Number(req.query.start) || 0;
+        const length = Number(req.query.length) || 10;
+        const search = req.query.search?.value || "";
+
+        const where = {};
+
+        if (search) {
+
+            where[Op.or] = [
+
+                {
+                    email: {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    role: {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    status: {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    "$customer.fname$": {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    "$customer.lname$": {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    "$customer.phone$": {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    "$customer.addressline$": {
+                        [Op.like]: `%${search}%`
+                    }
+                },
+
+                {
+                    "$customer.town$": {
+                        [Op.like]: `%${search}%`
+                    }
+                }
+
+            ];
+
+        }
+
+        const recordsTotal = await User.count();
+
+        const recordsFiltered = await User.count({
+
+            where,
+
+            include: [
+
+                {
+
+                    model: Customer,
+
+                    as: "customer"
+
+                }
+
+            ]
+
+        });
+
+        const users = await User.findAll({
+
+            where,
+
+            include: [
+
+                {
+
+                    model: Customer,
+
+                    as: "customer"
+
+                }
+
+            ],
+
+            offset: start,
+
+            limit: length,
+
+            order: [
+
+                ["id", "DESC"]
+
+            ]
+
+        });
+
+        return res.json({
+
+            draw,
+
+            recordsTotal,
+
+            recordsFiltered,
+
+            data: users
+
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+    }
+
 };
 
 /* UPDATE FULL USER */
@@ -276,6 +417,7 @@ const deleteUser = async (req, res) => {
 module.exports = {
     registerUser,
     loginUser,
+    getUsers,
     getAllUsers,
     updateFullUser,
     deleteUser,

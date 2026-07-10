@@ -4,30 +4,118 @@ const Item = db.Item;
 /* =========================
    GET ALL ITEMS
 ========================= */
+/* =========================
+   GET ALL ITEMS
+   SUPPORTS PAGINATION + INFINITE SCROLL
+========================= */
 const getAllItems = async (req, res) => {
-  try {
-    const items = await Item.findAll({
-      include: [
-        {
-          model: db.Category,
-          as: "category",
-        },
-        {
-          model: db.ItemImages,
-          as: "images",
-        },
 
-        {
-          model: db.Stock,
-          as: "stock",
-        },
-      ],
+  try {
+
+
+    const { start, length } = req.query;
+
+
+
+    const include = [
+
+      {
+        model: db.Category,
+        as: "category",
+      },
+
+      {
+        model: db.ItemImages,
+        as: "images",
+      },
+
+      {
+        model: db.Stock,
+        as: "stock",
+      },
+
+    ];
+
+
+
+    // =========================
+    // INFINITE SCROLL MODE
+    // =========================
+
+    if (start !== undefined && length !== undefined) {
+
+
+      const offset = Number(start);
+
+      const limit = Number(length);
+
+
+
+      const rows = await Item.findAll({
+
+          include,
+
+          offset,
+
+          limit,
+
+          order:[
+              ["item_id","ASC"]
+          ]
+
+      });
+
+
+      return res.json({
+
+          items: rows
+
+      });
+
+
+    }
+
+
+
+
+    // =========================
+    // PAGINATION MODE
+    // =========================
+
+
+    const items = await Item.findAll({
+
+      include,
+
+
+      order:[
+        ["item_id","ASC"]
+      ]
+
     });
 
-    return res.json({ items });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
+
+
+    return res.json({
+
+      items
+
+    });
+
+
+
+  } catch(err){
+
+
+    return res.status(500).json({
+
+      message: err.message
+
+    });
+
+
   }
+
 };
 
 /* =========================

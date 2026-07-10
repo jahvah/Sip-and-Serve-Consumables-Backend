@@ -11,6 +11,8 @@ const admin = require("../middlewares/admin");
 ========================= */
 router.get("/all", categoryController.getAllCategories);
 
+router.get("/", categoryController.getAllCategories);
+
 /* =========================
    ADMIN ONLY - CREATE CATEGORY
 ========================= */

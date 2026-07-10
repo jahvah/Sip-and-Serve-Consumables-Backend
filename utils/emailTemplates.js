@@ -23,8 +23,8 @@ const orderConfirmationTemplate = ({ customerName, orderId, date, items = [], re
             <tr>
                 <td style="padding:10px 8px;border-bottom:1px solid #eee;">${i.name}</td>
                 <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:center;">${i.quantity}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">₱${price.toFixed(2)}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">₱${subtotal.toFixed(2)}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">PHP ${price.toFixed(2)}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">PHP ${subtotal.toFixed(2)}</td>
             </tr>
         `;
     }).join("");
@@ -63,11 +63,11 @@ const orderConfirmationTemplate = ({ customerName, orderId, date, items = [], re
 
             <!-- Subtotal, Shipping Fee, and Total, matches the PDF totals block -->
             <div style="text-align:right;margin-top:14px;font-size:13px;">
-                <div style="margin-bottom:4px;">Subtotal: ₱${total.toFixed(2)}</div>
-                <div style="margin-bottom:8px;">Shipping Fee: ₱
+                <div style="margin-bottom:4px;">Subtotal: PHP ${total.toFixed(2)}</div>
+                <div style="margin-bottom:8px;">Shipping Fee: PHP
                 ${SHIPPING_FEE.toFixed(2)}</div>
                 <div style="font-size:15px;font-weight:bold;color:${BRAND_COLOR};">
-                    Total: ₱
+                    Total: PHP
                     ${(total + SHIPPING_FEE).toFixed(2)}
                 </div>
             </div>
@@ -114,6 +114,15 @@ const orderStatusUpdateTemplate = ({ customerName, orderId, oldStatus, newStatus
         </div>
     `;
 };
+
+/**
+ * Builds the HTML body for an admin-created order email.
+ *
+ * @param {Object} params
+ * @param {string} params.customerName
+ * @param {number|string} params.orderId
+ * @param {string} params.datePlaced
+ */
 
 module.exports = {
     orderConfirmationTemplate,

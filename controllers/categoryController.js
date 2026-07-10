@@ -3,13 +3,93 @@ const db = require("../models");
 const Category = db.Category;
 
 /* GET ALL */
+/* GET ALL / PAGINATION */
 const getAllCategories = async (req, res) => {
+
     try {
-        const categories = await Category.findAll();
-        return res.json({ categories });
-    } catch (err) {
-        return res.status(500).json({ message: err.message });
+
+        const { start, length } = req.query;
+
+
+        // =========================
+        // INFINITE SCROLL MODE
+        // =========================
+
+        if (start !== undefined && length !== undefined) {
+
+
+            const offset = Number(start);
+
+            const limit = Number(length);
+
+
+
+            const { count, rows } = await Category.findAndCountAll({
+
+                offset,
+
+                limit,
+
+                order: [
+                    ["category_id", "ASC"]
+                ]
+
+            });
+
+
+
+            return res.json({
+
+                categories: rows,
+
+                total: count,
+
+                start: offset,
+
+                length: limit
+
+            });
+
+
+        }
+
+
+
+
+        // =========================
+        // NORMAL LOAD
+        // =========================
+
+        const categories = await Category.findAll({
+
+            order:[
+                ["category_id","ASC"]
+            ]
+
+        });
+
+
+
+        return res.json({
+
+            categories
+
+        });
+
+
+
+    } catch(err){
+
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+
     }
+
 };
 
 /* CREATE */

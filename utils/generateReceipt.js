@@ -108,8 +108,8 @@ const generateReceiptPDF = ({ orderId, customerName, customerEmail, date, items 
                 doc.fillColor("#333333");
                 doc.text(i.name, col.item, y, { width: 240 });
                 doc.text(String(i.quantity), col.qty, y);
-                doc.text(`$${price.toFixed(2)}`, col.price, y);
-                doc.text(`$${subtotal.toFixed(2)}`, col.subtotal, y);
+                doc.text(`PHP ${price.toFixed(2)}`, col.price, y);
+                doc.text(`PHP ${subtotal.toFixed(2)}`, col.subtotal, y);
 
                 y += 20;
             });
@@ -128,20 +128,20 @@ const generateReceiptPDF = ({ orderId, customerName, customerEmail, date, items 
                 .fontSize(10)
                 .fillColor("#333333")
                 .text("Subtotal:", col.price - 20, y + 15)
-                .text(`$${subtotalBeforeShipping.toFixed(2)}`, col.subtotal, y + 15);
+                .text(`PHP ${subtotalBeforeShipping.toFixed(2)}`, col.subtotal, y + 15);
 
             doc
                 .font("Helvetica")
                 .fontSize(10)
                 .fillColor("#333333")
                 .text("Shipping Fee:", col.price - 20, y + 33)
-                .text(`$${SHIPPING_FEE.toFixed(2)}`, col.subtotal, y + 33);
+                .text(`PHP ${SHIPPING_FEE.toFixed(2)}`, col.subtotal, y + 33);
 
             doc
                 .font("Helvetica-Bold")
                 .fontSize(12)
                 .fillColor(BRAND_COLOR)
-                .text(`Total: $${total.toFixed(2)}`, col.subtotal - 40, y + 55);
+                .text(`Total: PHP ${total.toFixed(2)}`, col.subtotal - 40, y + 55);
 
             doc.moveDown(6);
 

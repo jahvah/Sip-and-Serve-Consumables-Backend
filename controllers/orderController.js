@@ -2,8 +2,11 @@ const db = require("../models");
 const { Op } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
+
 const sendEmail = require("../utils/sendEmail");
-const { orderStatusUpdateTemplate } = require("../utils/emailTemplates");
+
+const { orderStatusUpdateTemplate, orderConfirmationTemplate } = require("../utils/emailTemplates");
+const { generateReceiptPDF } = require("../utils/generateReceipt");
 
 const OrderInfo = db.OrderInfo;
 const OrderLine = db.OrderLine;
@@ -242,6 +245,117 @@ const createOrder = async (req, res) => {
 
     await transaction.commit();
 
+    const createdOrder = await OrderInfo.findOne({
+        where: {
+            orderinfo_id: order.orderinfo_id
+        },
+        include: [
+            {
+                model: Customer,
+                as: "customer",
+                include: [
+                    {
+                        model: db.User,
+                        as: "user"
+                    }
+                ]
+            },
+            {
+                model: OrderLine,
+                as: "orderlines",
+                include: [
+                    {
+                        model: Item,
+                        as: "item"
+                    }
+                ]
+            }
+        ]
+    });
+
+    const items = createdOrder.orderlines.map(line => ({
+        name: line.item.item_name,
+        quantity: line.quantity,
+        price: Number(line.item.sell_price)
+    }));
+    
+    const customerName =
+        `${createdOrder.customer.fname} ${createdOrder.customer.lname}`.trim();
+
+    const recipientEmail =
+        createdOrder.customer.user.email;
+
+    const receipt = await generateReceiptPDF({
+        orderId: createdOrder.orderinfo_id,
+        customerName,
+        customerEmail: recipientEmail,
+        date: createdOrder.date_placed,
+        items
+    });
+
+    const receiptUrl =
+        `${req.protocol}://${req.get("host")}/uploads/receipts/${receipt.fileName}`;
+
+    console.log(receipt);
+
+    // Send email to customer (does not affect order creation if email fails)
+    try {
+
+        const customer = await Customer.findOne({
+            where: {
+                customer_id
+            },
+            include: [
+                {
+                    model: db.User,
+                    as: "user"
+                }
+            ]
+        });
+
+        const recipientEmail = customer?.user?.email;
+
+        if (recipientEmail) {
+
+            const customerName =
+                `${customer.fname} ${customer.lname}`.trim() || "Customer";
+
+            await sendEmail({
+                email: recipientEmail,
+                subject: `Order #${createdOrder.orderinfo_id} Confirmation`,
+                message: orderConfirmationTemplate({
+                    customerName,
+                    orderId: createdOrder.orderinfo_id,
+                    date: createdOrder.date_placed,
+                    items,
+                    receiptUrl
+                }),
+                attachments: [
+                    {
+                        filename: receipt.fileName,
+                        content: receipt.buffer,
+                        contentType: "application/pdf"
+                    }
+                ]
+            });
+
+        } else {
+
+            console.warn(
+                `No email found for customer ${customer_id}; skipping order creation email.`
+            );
+
+        }
+
+    } catch (emailErr) {
+
+        console.error(
+            "Failed to send order creation email:",
+            emailErr.message
+        );
+
+    }
+
     return res.json({
       message: "Order created successfully",
       order,
@@ -289,6 +403,14 @@ const updateOrder = async (req, res) => {
       });
     }
 
+    if (order.status === "Shipped" || order.status === "Delivered") {
+        await transaction.rollback();
+
+        return res.status(400).json({
+            message: "Shipped or delivered orders can no longer be edited."
+        });
+    }
+
     const oldStatus = order.status;
 
     const {
@@ -299,6 +421,51 @@ const updateOrder = async (req, res) => {
       status,
       orderlines,
     } = req.body;
+
+    if (Array.isArray(orderlines)) {
+
+      const ids = orderlines
+        .filter(l => l.item_id)
+        .map(l => Number(l.item_id));
+
+      if (new Set(ids).size !== ids.length) {
+
+        await transaction.rollback();
+
+        return res.status(400).json({
+          message: "Duplicate items are not allowed."
+        });
+
+      }
+
+    }
+
+    // Validate quantities
+    if (Array.isArray(orderlines)) {
+
+      for (const line of orderlines) {
+
+        if (!line.item_id) continue;
+
+        if (
+          line.quantity === undefined ||
+          line.quantity === null ||
+          line.quantity === "" ||
+          Number(line.quantity) <= 0
+        ) {
+
+          await transaction.rollback();
+
+          return res.status(400).json({
+            message: "Quantity must be greater than zero."
+          });
+
+        }
+
+      }
+
+    }
+
 
     const newCustomerId =
       customer_id && customer_id !== "" ? customer_id : order.customer_id;
@@ -316,6 +483,44 @@ const updateOrder = async (req, res) => {
 
     const newStatus = status && status !== "" ? status : order.status;
 
+    if (Array.isArray(orderlines)) {
+
+      for (const line of orderlines) {
+
+        if (!line.item_id) continue;
+
+        const stock = await Stock.findOne({
+          where: {
+            item_id: line.item_id
+          },
+          transaction,
+          lock: transaction.LOCK.UPDATE
+        });
+
+        if (!stock) {
+
+          await transaction.rollback();
+
+          return res.status(400).json({
+            message: "Stock record not found."
+          });
+
+        }
+
+        if (Number(line.quantity) > stock.quantity) {
+
+          await transaction.rollback();
+
+          return res.status(400).json({
+            message: `Not enough stock for item ${line.item_id}.`
+          });
+
+        }
+
+      }
+
+    }
+
     await order.update(
       {
         customer_id: order.customer_id,
@@ -328,6 +533,24 @@ const updateOrder = async (req, res) => {
     );
 
     if (Array.isArray(orderlines) && orderlines.length > 0) {
+
+      const incomingIds = orderlines.map(l => l.item_id);
+
+      await OrderLine.update(
+        {
+          deleted_at: new Date()
+        },
+        {
+          where: {
+            orderinfo_id: order.orderinfo_id,
+            item_id: {
+              [Op.notIn]: incomingIds
+            }
+          },
+          transaction
+        }
+      );
+
       for (const line of orderlines) {
         if (!line.item_id) {
           continue;

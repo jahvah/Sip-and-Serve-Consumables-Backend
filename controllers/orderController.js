@@ -157,7 +157,34 @@ const createOrder = async (req, res) => {
     }
 
     /* =========================
-       🔥 STOCK VALIDATION (OPTION A FIX)
+      VALIDATE QUANTITIES
+    ========================= */
+
+    for (const line of orderlines) {
+
+        if (!line.item_id) {
+            continue;
+        }
+
+        if (
+            line.quantity === undefined ||
+            line.quantity === null ||
+            line.quantity === "" ||
+            Number(line.quantity) <= 0
+        ) {
+
+            await transaction.rollback();
+
+            return res.status(400).json({
+                message: "Please set a valid quantity for every selected item."
+            });
+
+        }
+
+    }
+
+    /* =========================
+        STOCK VALIDATION (OPTION A FIX)
     ========================= */
     for (const line of orderlines) {
       if (!line.item_id) continue;
@@ -175,7 +202,7 @@ const createOrder = async (req, res) => {
         });
       }
 
-      if ((line.quantity || 0) > (stock.quantity || 0)) {
+      if (Number(line.quantity) > (stock.quantity || 0)) {
         await transaction.rollback();
         return res.status(400).json({
           message: `Quantity exceeded stock for item ID ${line.item_id}`,
@@ -207,7 +234,7 @@ const createOrder = async (req, res) => {
         {
           orderinfo_id: order.orderinfo_id,
           item_id: line.item_id,
-          quantity: line.quantity || 1,
+          quantity: Number(line.quantity),
         },
         { transaction },
       );
@@ -332,7 +359,7 @@ const updateOrder = async (req, res) => {
             {
               orderinfo_id: order.orderinfo_id,
               item_id: line.item_id,
-              quantity: line.quantity || 1,
+              quantity: Number(line.quantity),
             },
             { transaction },
           );

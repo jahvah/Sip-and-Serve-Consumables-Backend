@@ -124,7 +124,95 @@ const orderStatusUpdateTemplate = ({ customerName, orderId, oldStatus, newStatus
  * @param {string} params.datePlaced
  */
 
+const emailVerificationTemplate = ({ verifyUrl }) => {
+
+    return `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+
+            <h2>Welcome to SipAndServe!</h2>
+
+            <p>
+                Thank you for creating an account.
+            </p>
+
+            <p>
+                Before you can log in, please verify your email address.
+            </p>
+
+            <p style="margin:30px 0;">
+                <a
+                    href="${verifyUrl}"
+                    style="
+                        background:#6f4e37;
+                        color:white;
+                        padding:12px 20px;
+                        text-decoration:none;
+                        border-radius:5px;
+                    "
+                >
+                    Verify Email
+                </a>
+            </p>
+
+            <p>
+                If the button doesn't work, copy this link:
+            </p>
+
+            <p>
+                ${verifyUrl}
+            </p>
+
+            <hr>
+
+            <small>
+                If you didn't create this account,
+                you may safely ignore this email.
+            </small>
+
+        </div>
+    `;
+};
+
+const passwordResetTemplate = ({ resetUrl }) => {
+
+    return `
+        <div style="font-family:Arial">
+
+            <h2>Password Reset</h2>
+
+            <p>
+
+                We received a request to reset
+                your SipAndServe password.
+
+            </p>
+
+            <p>
+
+                Click below:
+
+            </p>
+
+            <a href="${resetUrl}">
+
+                Reset Password
+
+            </a>
+
+            <p>
+
+                This link expires in 1 hour.
+
+            </p>
+
+        </div>
+    `;
+
+};
+
 module.exports = {
     orderConfirmationTemplate,
-    orderStatusUpdateTemplate
+    orderStatusUpdateTemplate,
+    emailVerificationTemplate,
+    passwordResetTemplate
 };

@@ -2,6 +2,16 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const db = require("../models");
 const { Op } = require("sequelize");
+const crypto = require("crypto");
+
+const sendEmail = require("../utils/sendEmail");
+const { 
+    emailVerificationTemplate,
+    passwordResetTemplate
+ } = require("../utils/emailTemplates");
+
+const VERIFICATION_EXPIRATION_MS =
+    24 * 60 * 60 * 1000;
 
 const User = db.User;
 const Customer = db.Customer;
@@ -27,12 +37,23 @@ const registerUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const verificationToken =
+            crypto.randomBytes(32).toString("hex");
+
+        const verificationExpires =
+            new Date(Date.now() + VERIFICATION_EXPIRATION_MS);
+
         const user = await User.create({
             email,
             password: hashedPassword,
             role: "User",
             profile_image: "default.png",
-            status: "Active"
+            status: "Active",
+
+            email_verified_at: null,
+            verification_token: verificationToken,
+            verification_expires_at: verificationExpires,
+
         }, { transaction });
 
         await Customer.create({
@@ -43,13 +64,33 @@ const registerUser = async (req, res) => {
             addressline: "",
             town: "",
             image_path: null
+
         }, { transaction });
+
+        const verifyUrl =
+            `http://localhost:3000/api/users/verify-email/${verificationToken}`;
+
+        await sendEmail({
+
+            email: user.email,
+
+            subject: "Verify your SipAndServe account",
+
+            message: emailVerificationTemplate({
+
+                verifyUrl
+
+            })
+
+        });
 
         await transaction.commit();
 
         return res.json({
             success: true,
-            user_id: user.id
+            
+            message:
+                "Registration successful. Please check your email to verify your account."
         });
 
     } catch (err) {
@@ -73,6 +114,19 @@ const loginUser = async (req, res) => {
 
         if (!match) return res.status(401).json({ message: "Invalid login" });
 
+        if (!user.email_verified_at) {
+
+            return res.status(403).json({
+
+                message:
+                    "Please verify your email before logging in.",
+
+                verified: false
+
+            });
+
+        }
+
         const token = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET,
@@ -93,6 +147,167 @@ const loginUser = async (req, res) => {
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
+};
+
+const verifyEmail = async (req, res) => {
+
+    const token = req.params.token;
+
+    try {
+
+        const user = await User.findOne({
+
+            where: {
+
+                verification_token: token
+            }
+
+        });
+
+        if (!user) {
+
+            return res.redirect(
+                `${process.env.FRONTEND_URL}/html/emailInvalidVerification.html`
+            );
+        }
+
+        if (
+
+            user.verification_expires_at &&
+
+            user.verification_expires_at < new Date()
+
+        ) {
+
+            return res.redirect(
+
+        `${process.env.FRONTEND_URL}/html/emailExpiredVerification.html`
+
+            );
+
+        }
+
+        // Already verified
+        if (user.email_verified_at) {
+
+            return res.redirect(
+                `${process.env.FRONTEND_URL}/html/emailAlreadyVerified.html`
+            );
+
+        }
+
+        user.email_verified_at = new Date();
+
+        user.verification_expires_at = null;
+
+        await user.save();
+
+        // 5. Redirect to success page
+        return res.redirect(
+            `${process.env.FRONTEND_URL}/html/emailVerified.html`
+        );
+
+        user.email_verified_at = new Date();
+
+        await user.save();
+
+        return res.redirect(
+            `${process.env.FRONTEND_URL}/html/emailVerified.html`
+        );
+    }
+
+    catch (err) {
+
+        return res.status(500).send(err.message);
+
+    }
+
+};
+
+const resendVerificationEmail = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        const user = await User.findOne({
+
+            where: {
+                email
+            }
+
+        });
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                message: "No account found with that email."
+
+            });
+
+        }
+
+        if (user.email_verified_at) {
+
+            return res.status(400).json({
+
+                message: "This account has already been verified."
+
+            });
+
+        }
+
+        const verificationToken =
+            crypto.randomBytes(32).toString("hex");
+
+        const verificationExpires =
+            new Date(Date.now() + VERIFICATION_EXPIRATION_MS);
+
+        user.verification_token =
+            verificationToken;
+
+        user.verification_expires_at =
+            verificationExpires;
+
+        await user.save();
+
+        const verifyUrl =
+            `${process.env.APP_URL}/api/users/verify-email/${verificationToken}`;
+
+        await sendEmail({
+
+            email: user.email,
+
+            subject: "Verify your SipAndServe account",
+
+            message: emailVerificationTemplate({
+
+                verifyUrl
+
+            })
+
+        });
+
+        return res.json({
+
+            message:
+                "A new verification email has been sent."
+
+        });
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+    }
+
 };
 
 /* GET ADMIN PROFILE */
@@ -383,16 +598,23 @@ const createCustomer = async (req, res) => {
 
         const gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 
-if (!gmailPattern.test(email)) {
+        if (!gmailPattern.test(email)) {
 
-    await transaction.rollback();
+            await transaction.rollback();
 
-    return res.status(400).json({
-        message: "Please enter a valid Gmail address."
-    });
+            return res.status(400).json({
+                message: "Please enter a valid Gmail address."
+            });
 
-}
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        const verificationToken =
+            crypto.randomBytes(32).toString("hex");
+
+        const verificationExpires =
+            new Date(Date.now() + VERIFICATION_EXPIRATION_MS);
 
         const user = await User.create({
 
@@ -400,7 +622,11 @@ if (!gmailPattern.test(email)) {
             password: hashedPassword,
             role: role || "User",
             status: status || "Active",
-            profile_image: "default.png"
+            profile_image: "default.png",
+
+            email_verified_at: null,
+            verification_token: verificationToken,
+            verification_expires_at: verificationExpires,
 
         }, { transaction });
 
@@ -416,12 +642,31 @@ if (!gmailPattern.test(email)) {
 
         }, { transaction });
 
+        const verifyUrl =
+        `${process.env.APP_URL}/api/users/verify-email/${verificationToken}`;
+
+        await sendEmail({
+
+            email: user.email,
+
+            subject: "Verify your SipAndServe account",
+
+            message: emailVerificationTemplate({
+
+                verifyUrl
+
+            })
+
+        });
+
         await transaction.commit();
 
         return res.json({
 
             success: true,
-            message: "Customer created successfully"
+
+            message:
+                "Customer created successfully. A verification email has been sent."
 
         });
 
@@ -570,7 +815,23 @@ const updateProfile = async (req, res) => {
 
         if (emailChanged) {
 
+            const verificationToken =
+                crypto.randomBytes(32).toString("hex");
+
+            const verificationExpires =
+                new Date(
+                    Date.now() + VERIFICATION_EXPIRATION_MS
+                );
+
             user.email = email;
+
+            user.email_verified_at = null;
+
+            user.verification_token =
+                verificationToken;
+
+            user.verification_expires_at =
+                verificationExpires;
 
         }
 
@@ -591,10 +852,192 @@ const updateProfile = async (req, res) => {
 
         await user.save();
 
+        if (emailChanged) {
+
+            const verifyUrl =
+        `${process.env.APP_URL}/api/users/verify-email/${user.verification_token}`;
+
+            await sendEmail({
+
+                email: user.email,
+
+                subject: "Verify your new SipAndServe email address",
+
+                message: emailVerificationTemplate({
+
+                    verifyUrl
+
+                })
+
+            });
+
+        }
+
+        return res.json({
+
+            success: true,
+
+            emailChanged,
+
+            message: emailChanged
+
+                ? "Your email has been changed. Please verify your new email address before logging in again."
+
+                : "Profile updated successfully."
+
+        });
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
+const forgotPassword = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        const user = await User.findOne({
+
+            where: {
+                email
+            }
+
+        });
+
+        // Don't reveal whether the email exists
+        if (!user) {
+
+            return res.json({
+
+                message:
+                    "If an account with that email exists, a password reset email has been sent."
+
+            });
+
+        }
+
+        const resetToken =
+            crypto.randomBytes(32).toString("hex");
+
+        const resetExpires =
+            new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        user.password_reset_token =
+            resetToken;
+
+        user.password_reset_expires_at =
+            resetExpires;
+
+        await user.save();
+
+        const resetUrl =
+`${process.env.FRONTEND_URL}/html/resetPassword.html?token=${resetToken}`;
+
+        await sendEmail({
+
+            email: user.email,
+
+            subject: "Reset your SipAndServe password",
+
+            message: passwordResetTemplate({
+
+                resetUrl
+
+            })
+
+        });
+
         return res.json({
 
             message:
-                "Profile updated successfully."
+                "If an account with that email exists, a password reset email has been sent."
+
+        });
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
+const resetPassword = async (req, res) => {
+
+    try {
+
+        const token = req.params.token;
+
+        const { password } = req.body;
+
+        const user = await User.findOne({
+
+            where: {
+
+                password_reset_token: token
+
+            }
+
+        });
+
+        if (!user) {
+
+            return res.status(400).json({
+
+                message:
+                    "Invalid password reset link."
+
+            });
+
+        }
+
+        if (
+
+            user.password_reset_expires_at &&
+
+            user.password_reset_expires_at < new Date()
+
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "This password reset link has expired."
+
+            });
+
+        }
+
+        user.password =
+            await bcrypt.hash(password, 10);
+
+        user.password_reset_token = null;
+
+        user.password_reset_expires_at = null;
+
+        await user.save();
+
+        return res.json({
+
+            message:
+                "Password has been reset successfully."
 
         });
 
@@ -615,10 +1058,14 @@ const updateProfile = async (req, res) => {
 module.exports = {
     registerUser,
     loginUser,
+    verifyEmail,
+    resendVerificationEmail,
+    forgotPassword,
+    resetPassword,
 
     getProfile,
     updateProfile,
-    
+
     getUsers,
     getAllUsers,
     updateFullUser,

@@ -1,218 +1,645 @@
 const { BRAND_COLOR, SHOP_NAME, SHIPPING_FEE } = require("./brandConfig");
 
+
+const baseStyle = `
+    font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    background:#F6F8F7;
+    padding:30px;
+    color:#4B5563;
+`;
+
+const containerStyle = `
+    max-width:620px;
+    margin:auto;
+    background:#FFFFFF;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 4px 16px rgba(0,0,0,.05);
+`;
+
+const headerStyle = `
+    background:${BRAND_COLOR};
+    padding:30px;
+    color:white;
+`;
+
+const contentStyle = `
+    padding:30px;
+`;
+
+
+
 /**
- * Builds the HTML body for an order confirmation email (sent after checkout).
- * Visually mirrors the attached PDF receipt (same header style, table, and totals)
- * so the emailed receipt and the PDF attachment read as one consistent document.
- *
- * @param {Object} params
- * @param {string} params.customerName
- * @param {number|string} params.orderId
- * @param {string} params.date
- * @param {Array<{name: string, quantity: number, price?: number}>} params.items
+ * Order confirmation email
  */
-const orderConfirmationTemplate = ({ customerName, orderId, date, items = [], receiptUrl }) => {
+const orderConfirmationTemplate = ({
+    customerName,
+    orderId,
+    date,
+    items = [],
+    receiptUrl
+}) => {
+
     let total = 0;
 
-    const itemRows = items.map((i) => {
+
+    const itemRows = items.map((i)=>{
+
         const price = Number(i.price) || 0;
+
         const subtotal = price * (i.quantity || 0);
+
         total += subtotal;
 
+
         return `
-            <tr>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;">${i.name}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:center;">${i.quantity}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">PHP ${price.toFixed(2)}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;">PHP ${subtotal.toFixed(2)}</td>
-            </tr>
+        <tr>
+
+            <td style="
+                padding:12px;
+                border-bottom:1px solid #E5E7EB;
+            ">
+                ${i.name}
+            </td>
+
+
+            <td style="
+                padding:12px;
+                text-align:center;
+                border-bottom:1px solid #E5E7EB;
+            ">
+                ${i.quantity}
+            </td>
+
+
+            <td style="
+                padding:12px;
+                text-align:right;
+                border-bottom:1px solid #E5E7EB;
+            ">
+                PHP ${price.toFixed(2)}
+            </td>
+
+
+            <td style="
+                padding:12px;
+                text-align:right;
+                border-bottom:1px solid #E5E7EB;
+            ">
+                PHP ${subtotal.toFixed(2)}
+            </td>
+
+        </tr>
         `;
+
     }).join("");
 
+
+
     return `
-        <div style="font-family:Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;color:#333;">
 
-            <!-- Header, matches the PDF header -->
-            <h1 style="color:${BRAND_COLOR};font-size:24px;margin:0;">${SHOP_NAME}</h1>
-            <p style="color:#888888;font-size:11px;margin:2px 0 0;">Order Receipt</p>
-            <div style="border-top:2px solid ${BRAND_COLOR};margin:10px 0 20px;"></div>
+<div style="${baseStyle}">
 
-            <p style="font-size:15px;">Thank you for your order, <strong>${customerName}</strong>!</p>
+<div style="${containerStyle}">
 
-            <!-- Order info, matches the PDF order-info block -->
-            <table style="font-size:13px;margin-bottom:16px;">
-                <tr><td style="font-weight:bold;padding:2px 8px 2px 0;">Order #:</td><td>${orderId}</td></tr>
-                <tr><td style="font-weight:bold;padding:2px 8px 2px 0;">Date:</td><td>${date}</td></tr>
-                <tr><td style="font-weight:bold;padding:2px 8px 2px 0;">Customer:</td><td>${customerName}</td></tr>
-            </table>
 
-            <!-- Items table, matches the PDF table columns/order -->
-            <table style="width:100%;border-collapse:collapse;">
-                <thead>
+    <div style="${headerStyle}">
+
+        <h1 style="
+            margin:0;
+            font-size:26px;
+        ">
+            ${SHOP_NAME}
+        </h1>
+
+
+        <p style="
+            margin:5px 0 0;
+            opacity:.9;
+        ">
+            Order Confirmation
+        </p>
+
+    </div>
+
+
+
+    <div style="${contentStyle}">
+
+
+        <h2 style="
+            color:#1F2937;
+            font-size:22px;
+        ">
+            Thank you, ${customerName}! ☕
+        </h2>
+
+
+
+        <p>
+            Your order has been successfully placed.
+            Here are your order details:
+        </p>
+
+
+
+        <div style="
+            background:#F8FAFC;
+            border-radius:12px;
+            padding:18px;
+            margin:20px 0;
+        ">
+
+
+            <p>
+                <strong>Order #:</strong>
+                ${orderId}
+            </p>
+
+
+            <p>
+                <strong>Date:</strong>
+                ${date}
+            </p>
+
+
+            <p>
+                <strong>Customer:</strong>
+                ${customerName}
+            </p>
+
+
+        </div>
+
+
+
+
+
+        <table style="
+            width:100%;
+            border-collapse:collapse;
+            font-size:14px;
+        ">
+
+
+            <thead>
+
+                <tr style="
+                    background:${BRAND_COLOR};
+                    color:white;
+                ">
+
+
+                    <th style="padding:12px;text-align:left;">
+                        Item
+                    </th>
+
+
+                    <th style="padding:12px;">
+                        Qty
+                    </th>
+
+
+                    <th style="padding:12px;text-align:right;">
+                        Price
+                    </th>
+
+
+                    <th style="padding:12px;text-align:right;">
+                        Subtotal
+                    </th>
+
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                ${
+                    itemRows ||
+                    `
                     <tr>
-                        <th style="text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px;">Item</th>
-                        <th style="text-align:center;padding:8px;border-bottom:2px solid #333;font-size:13px;">Qty</th>
-                        <th style="text-align:right;padding:8px;border-bottom:2px solid #333;font-size:13px;">Price</th>
-                        <th style="text-align:right;padding:8px;border-bottom:2px solid #333;font-size:13px;">Subtotal</th>
+                        <td colspan="4"
+                        style="padding:15px;text-align:center;">
+                            No items found
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${itemRows || `<tr><td colspan="4" style="padding:8px;font-size:13px;">No item details available.</td></tr>`}
-                </tbody>
-            </table>
+                    `
+                }
 
-            <!-- Subtotal, Shipping Fee, and Total, matches the PDF totals block -->
-            <div style="text-align:right;margin-top:14px;font-size:13px;">
-                <div style="margin-bottom:4px;">Subtotal: PHP ${total.toFixed(2)}</div>
-                <div style="margin-bottom:8px;">Shipping Fee: PHP
-                ${SHIPPING_FEE.toFixed(2)}</div>
-                <div style="font-size:15px;font-weight:bold;color:${BRAND_COLOR};">
-                    Total: PHP
-                    ${(total + SHIPPING_FEE).toFixed(2)}
-                </div>
-            </div>
 
-            <p style="margin-top:24px;font-size:13px;color:#666;">
-                Your receipt is attached to this email as a PDF for your records${receiptUrl ? `, or you can <a href="${receiptUrl}" style="color:${BRAND_COLOR};" target="_blank">download it here</a>` : ""}.
-            </p>
-            <p style="margin-top:8px;font-size:13px;color:#666;">
-                We'll email you again once your order status changes.
-            </p>
+            </tbody>
 
-            <p style="margin-top:28px;font-size:12px;color:#999999;text-align:center;">
-                Thank you for shopping with us!
-            </p>
-        </div>
-    `;
-};
 
-/**
- * Builds the HTML body for an order status update email.
- *
- * @param {Object} params
- * @param {string} params.customerName
- * @param {number|string} params.orderId
- * @param {string} params.oldStatus
- * @param {string} params.newStatus
- */
-const orderStatusUpdateTemplate = ({ customerName, orderId, oldStatus, newStatus }) => {
-    return `
-        <div style="font-family:Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;color:#333;">
-            <h1 style="color:${BRAND_COLOR};font-size:22px;margin:0;">${SHOP_NAME}</h1>
-            <p style="color:#888888;font-size:11px;margin:2px 0 0;">Order Update</p>
-            <div style="border-top:2px solid ${BRAND_COLOR};margin:10px 0 20px;"></div>
+        </table>
 
-            <p style="font-size:14px;">Hi ${customerName},</p>
-            <p style="font-size:14px;">
-                Your order <strong>#${orderId}</strong> status has changed from
-                <strong>${oldStatus}</strong> to <strong>${newStatus}</strong>.
-            </p>
 
-            <p style="margin-top:24px;font-size:12px;color:#999999;text-align:center;">
-                Thanks for shopping with us!
-            </p>
-        </div>
-    `;
-};
 
-/**
- * Builds the HTML body for an admin-created order email.
- *
- * @param {Object} params
- * @param {string} params.customerName
- * @param {number|string} params.orderId
- * @param {string} params.datePlaced
- */
 
-const emailVerificationTemplate = ({ verifyUrl }) => {
 
-    return `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+        <div style="
+            margin-top:25px;
+            text-align:right;
+        ">
 
-            <h2>Welcome to SipAndServe!</h2>
 
             <p>
-                Thank you for creating an account.
+                Subtotal:
+                <strong>
+                PHP ${total.toFixed(2)}
+                </strong>
             </p>
+
 
             <p>
-                Before you can log in, please verify your email address.
+                Shipping Fee:
+                <strong>
+                PHP ${SHIPPING_FEE.toFixed(2)}
+                </strong>
             </p>
 
-            <p style="margin:30px 0;">
-                <a
-                    href="${verifyUrl}"
-                    style="
-                        background:#6f4e37;
-                        color:white;
-                        padding:12px 20px;
-                        text-decoration:none;
-                        border-radius:5px;
-                    "
-                >
-                    Verify Email
+
+
+            <h2 style="
+                color:${BRAND_COLOR};
+            ">
+                Total:
+                PHP ${(total + SHIPPING_FEE).toFixed(2)}
+            </h2>
+
+
+        </div>
+
+
+
+
+
+        <div style="
+            margin-top:30px;
+            padding:15px;
+            background:#E8F5E9;
+            border-radius:12px;
+            color:#1B5E20;
+        ">
+
+
+            Your receipt is attached as a PDF.
+
+            ${
+                receiptUrl
+                ?
+                `
+                <br><br>
+
+                You can also
+                <a href="${receiptUrl}"
+                style="
+                    color:${BRAND_COLOR};
+                    font-weight:bold;
+                ">
+                view your receipt online
                 </a>
-            </p>
+                `
+                :
+                ""
+            }
 
-            <p>
-                If the button doesn't work, copy this link:
-            </p>
-
-            <p>
-                ${verifyUrl}
-            </p>
-
-            <hr>
-
-            <small>
-                If you didn't create this account,
-                you may safely ignore this email.
-            </small>
 
         </div>
-    `;
-};
 
-const passwordResetTemplate = ({ resetUrl }) => {
 
-    return `
-        <div style="font-family:Arial">
 
-            <h2>Password Reset</h2>
 
-            <p>
+        <p style="
+            margin-top:30px;
+            text-align:center;
+            color:#9CA3AF;
+            font-size:13px;
+        ">
+            Thank you for shopping with ${SHOP_NAME}.
+        </p>
 
-                We received a request to reset
-                your SipAndServe password.
 
-            </p>
 
-            <p>
+    </div>
 
-                Click below:
 
-            </p>
+</div>
 
-            <a href="${resetUrl}">
 
-                Reset Password
+</div>
 
-            </a>
-
-            <p>
-
-                This link expires in 1 hour.
-
-            </p>
-
-        </div>
-    `;
+`;
 
 };
+
+
+
+
+
+/**
+ * Order status update email
+ */
+const orderStatusUpdateTemplate = ({
+    customerName,
+    orderId,
+    oldStatus,
+    newStatus
+})=>{
+
+
+return `
+
+<div style="${baseStyle}">
+
+
+<div style="${containerStyle}">
+
+
+<div style="${headerStyle}">
+
+<h1 style="margin:0;">
+${SHOP_NAME}
+</h1>
+
+<p>
+Order Update
+</p>
+
+
+</div>
+
+
+
+<div style="${contentStyle}">
+
+
+<h2 style="
+color:#1F2937;
+">
+Hello ${customerName}
+</h2>
+
+
+
+<p>
+Your order status has been updated.
+</p>
+
+
+
+<div style="
+background:#F8FAFC;
+padding:20px;
+border-radius:12px;
+">
+
+
+<p>
+Order:
+<strong>
+#${orderId}
+</strong>
+</p>
+
+
+<p>
+${oldStatus}
+&nbsp;
+→
+&nbsp;
+<strong style="color:${BRAND_COLOR}">
+${newStatus}
+</strong>
+</p>
+
+
+</div>
+
+
+
+<p style="
+margin-top:30px;
+text-align:center;
+color:#999;
+">
+Thank you for choosing ${SHOP_NAME}.
+</p>
+
+
+</div>
+
+
+</div>
+
+</div>
+
+`;
+
+};
+
+
+
+
+
+
+const emailVerificationTemplate = ({
+    verifyUrl
+})=>{
+
+
+return `
+
+<div style="${baseStyle}">
+
+
+<div style="${containerStyle}">
+
+
+<div style="${headerStyle}">
+
+<h1>
+${SHOP_NAME}
+</h1>
+
+<p>
+Welcome!
+</p>
+
+</div>
+
+
+<div style="${contentStyle}">
+
+
+<h2>
+Verify your email address
+</h2>
+
+
+<p>
+Thank you for creating your account.
+Please verify your email before logging in.
+</p>
+
+
+
+<div style="
+text-align:center;
+margin:30px 0;
+">
+
+
+<a href="${verifyUrl}"
+
+style="
+background:${BRAND_COLOR};
+color:white;
+padding:14px 28px;
+border-radius:999px;
+text-decoration:none;
+font-weight:bold;
+">
+
+Verify Email
+
+</a>
+
+
+</div>
+
+
+
+<p>
+If the button does not work, copy this link:
+</p>
+
+
+<p style="
+word-break:break-all;
+color:${BRAND_COLOR};
+">
+
+${verifyUrl}
+
+</p>
+
+
+
+</div>
+
+
+</div>
+
+</div>
+
+`;
+
+};
+
+
+
+
+
+const passwordResetTemplate = ({
+    resetUrl
+})=>{
+
+
+return `
+
+<div style="${baseStyle}">
+
+
+<div style="${containerStyle}">
+
+
+<div style="${headerStyle}">
+
+<h1>
+${SHOP_NAME}
+</h1>
+
+<p>
+Password Reset
+</p>
+
+
+</div>
+
+
+
+<div style="${contentStyle}">
+
+
+<h2>
+Reset your password
+</h2>
+
+
+<p>
+We received a request to reset your SipAndServe password.
+</p>
+
+
+
+<div style="
+text-align:center;
+margin:30px 0;
+">
+
+
+<a href="${resetUrl}"
+
+style="
+background:${BRAND_COLOR};
+color:white;
+padding:14px 28px;
+border-radius:999px;
+text-decoration:none;
+font-weight:bold;
+">
+
+Reset Password
+
+</a>
+
+
+</div>
+
+
+
+<p>
+This link will expire in 1 hour.
+</p>
+
+
+
+</div>
+
+
+</div>
+
+</div>
+
+`;
+
+};
+
+
+
+
 
 module.exports = {
+
     orderConfirmationTemplate,
+
     orderStatusUpdateTemplate,
+
     emailVerificationTemplate,
+
     passwordResetTemplate
+
 };

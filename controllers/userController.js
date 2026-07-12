@@ -95,6 +95,43 @@ const loginUser = async (req, res) => {
     }
 };
 
+/* GET ADMIN PROFILE */
+const getProfile = async (req, res) => {
+
+    try {
+
+        const user = await User.findByPk(req.user.id, {
+
+            attributes: [
+                "id",
+                "email",
+                "role",
+                "status",
+                "profile_image"
+            ]
+
+        });
+
+        if (!user) {
+
+            return res.status(404).json({
+                message: "User not found."
+            });
+
+        }
+
+        return res.json(user);
+
+    } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+
+};
+
 /* GET ALL USERS (WITH CUSTOMER) */
 const getAllUsers = async (req, res) => {
 
@@ -414,9 +451,174 @@ const deleteUser = async (req, res) => {
     }
 };
 
+/* UPDATE ADMIN PROFILE */
+const updateProfile = async (req, res) => {
+
+    try {
+
+        const {
+
+            email,
+            password
+
+        } = req.body;
+
+        const user = await User.findByPk(req.user.id);
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                message: "User not found."
+
+            });
+
+        }
+
+        /* =========================
+           EMAIL VALIDATION
+        ========================= */
+
+        const gmailPattern =
+            /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+        if (
+            email &&
+            !gmailPattern.test(email)
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "Please enter a valid Gmail address."
+
+            });
+
+        }
+
+        /* =========================
+           DUPLICATE EMAIL
+        ========================= */
+
+        if (email && email !== user.email) {
+
+            const existing =
+                await User.findOne({
+
+                    where: {
+
+                        email,
+
+                        id: {
+
+                            [Op.ne]: user.id
+
+                        }
+
+                    }
+
+                });
+
+            if (existing) {
+
+                return res.status(400).json({
+
+                    message:
+                        "Email already exists."
+
+                });
+
+            }
+
+        }
+
+        /* =========================
+           NO CHANGES
+        ========================= */
+
+        const emailChanged =
+            email &&
+            email !== user.email;
+
+        const passwordChanged =
+            password &&
+            password.trim() !== "";
+
+        const imageChanged =
+            !!req.file;
+
+        if (
+
+            !emailChanged &&
+            !passwordChanged &&
+            !imageChanged
+
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "No changes detected."
+
+            });
+
+        }
+
+        /* =========================
+           UPDATE
+        ========================= */
+
+        if (emailChanged) {
+
+            user.email = email;
+
+        }
+
+        if (passwordChanged) {
+
+            user.password =
+                await bcrypt.hash(password, 10);
+
+        }
+
+        if (req.file) {
+
+            user.profile_image =
+                "uploads/profile/" +
+                req.file.filename;
+
+        }
+
+        await user.save();
+
+        return res.json({
+
+            message:
+                "Profile updated successfully."
+
+        });
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
 module.exports = {
     registerUser,
     loginUser,
+
+    getProfile,
+    updateProfile,
+    
     getUsers,
     getAllUsers,
     updateFullUser,

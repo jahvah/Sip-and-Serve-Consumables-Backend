@@ -3,6 +3,7 @@ const router = express.Router();
 
 const userController = require("../controllers/userController");
 const upload = require("../middlewares/upload");
+const uploadProfile = require("../middlewares/uploadProfile");
 
 const auth = require("../middlewares/auth");
 const admin = require("../middlewares/admin");
@@ -14,6 +15,23 @@ const admin = require("../middlewares/admin");
 router.post("/register", userController.registerUser);
 
 router.post("/login", userController.loginUser);
+
+/* =========================
+   ACCOUNT PROFILE
+========================= */
+
+router.get(
+    "/profile",
+    auth,
+    userController.getProfile
+);
+
+router.put(
+    "/profile",
+    auth,
+    uploadProfile.single("profile_image"),
+    userController.updateProfile
+);
 
 /* =========================
    ADMIN ONLY ROUTES
